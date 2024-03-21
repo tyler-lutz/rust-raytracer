@@ -1,3 +1,5 @@
+mod vector3;
+
 fn main() {
     let image_width = 256;
     let image_height = 256;
