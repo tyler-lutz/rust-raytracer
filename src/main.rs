@@ -1,28 +1,23 @@
+mod hittable;
+mod hittable_list;
 mod ray;
+mod sphere;
 mod vector3;
 
+use hittable::{HitRecord, Hittable};
 use ray::Ray;
 use vector3::Vector3;
 
-fn hit_sphere(center: Vector3, radius: f64, ray: &Ray) -> f64 {
-    let oc = ray.origin - center;
-    let a = ray.direction.dot(ray.direction);
-    let b = 2.0 * oc.dot(ray.direction);
-    let c = oc.dot(oc) - radius * radius;
-    let discriminant = b * b - 4.0 * a * c;
+use crate::{hittable_list::HittableList, sphere::Sphere};
 
-    if discriminant < 0.0 {
-        return -1.0;
-    } else {
-        return (-b - discriminant.sqrt()) / (2.0 * a);
-    }
-}
-
-fn ray_color(ray: &Ray) -> Vector3 {
-    let t = hit_sphere(Vector3::new(0.0, 0.0, -1.0), 0.5, ray);
-    if t > 0.0 {
-        let n = (ray.at(t) - Vector3::new(0.0, 0.0, -1.0)).normalized();
-        return 0.5 * Vector3::new(n.x + 1.0, n.y + 1.0, n.z + 1.0);
+fn ray_color(ray: &Ray, world: &dyn Hittable) -> Vector3 {
+    let mut hit_record = HitRecord {
+        point: Vector3::new(0.0, 0.0, 0.0),
+        normal: Vector3::new(0.0, 0.0, 0.0),
+        t: 0.0,
+    };
+    if world.hit(ray, 0.0, f64::INFINITY, &mut hit_record) {
+        return 0.5 * (hit_record.normal + Vector3::new(1.0, 1.0, 1.0));
     }
 
     let unit_direction = ray.direction.normalized();
@@ -46,6 +41,14 @@ fn main() {
     if image_height < 1 {
         image_height = 1;
     }
+
+    let mut world = HittableList::new();
+
+    world.add(Box::new(Sphere::new(Vector3::new(0.0, 0.0, -1.0), 0.5)));
+    world.add(Box::new(Sphere::new(
+        Vector3::new(0.0, -100.5, -1.0),
+        100.0,
+    )));
 
     let focal_length = 1.0;
     let viewport_height = 2.0;
@@ -72,7 +75,7 @@ fn main() {
             let ray_direction = pixel_center - camera_center;
             let ray = Ray::new(camera_center, ray_direction);
 
-            let pixel_color = ray_color(&ray);
+            let pixel_color = ray_color(&ray, &world);
 
             write_color(&pixel_color);
         }
