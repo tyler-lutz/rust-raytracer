@@ -1,3 +1,5 @@
+use rand::Rng;
+
 use crate::{
     hittable::{HitRecord, Hittable},
     interval::Interval,
@@ -8,6 +10,7 @@ use crate::{
 pub struct Camera {
     pub aspect_ratio: f64,
     pub image_width: i32,
+    pub samples_per_pixel: i32,
     image_height: i32,
     center: Vector3,
     pixel00_loc: Vector3,
@@ -50,13 +53,11 @@ impl Camera {
         for j in 0..self.image_height {
             eprint!("\rScanlines remaining: {:3}", (self.image_height - j));
             for i in 0..self.image_width {
-                let pixel_center = self.pixel00_loc
-                    + (i as f64 * self.pixel_delta_u)
-                    + (j as f64 * self.pixel_delta_v);
-                let ray_direction = pixel_center - self.center;
-                let ray = Ray::new(self.center, ray_direction);
-
-                let pixel_color = self.ray_color(&ray, world);
+                let mut pixel_color = Vector3::new(0.0, 0.0, 0.0);
+                for _ in 0..self.samples_per_pixel {
+                    let ray = self.get_ray(i, j);
+                    pixel_color = pixel_color + self.ray_color(&ray, world)
+                }
 
                 self.write_color(&pixel_color);
             }
@@ -65,12 +66,40 @@ impl Camera {
         eprintln!("\rDone!                     ")
     }
 
+    fn get_ray(&self, i: i32, j: i32) -> Ray {
+        let pixel_center =
+            self.pixel00_loc + (i as f64 * self.pixel_delta_u) + (j as f64 * self.pixel_delta_v);
+        let pixel_sample = pixel_center + self.pixel_sample_square();
+
+        let ray_origin = self.center;
+        let ray_direction = pixel_sample - ray_origin;
+        Ray::new(ray_origin, ray_direction)
+    }
+
+    fn pixel_sample_square(&self) -> Vector3 {
+        let mut rng = rand::thread_rng();
+        let px = -0.5 + rng.gen::<f64>();
+        let py = -0.5 + rng.gen::<f64>();
+        (px * self.pixel_delta_u) + (py * self.pixel_delta_v)
+    }
+
     fn write_color(&self, pixel_color: &Vector3) {
+        let mut r = pixel_color.x;
+        let mut g = pixel_color.y;
+        let mut b = pixel_color.z;
+
+        let scale = 1.0 / self.samples_per_pixel as f64;
+        r *= scale;
+        g *= scale;
+        b *= scale;
+
+        let intensity = Interval::new(0.000, 0.999);
+
         println!(
             "{} {} {}",
-            (255.999 * pixel_color.x) as i32,
-            (255.999 * pixel_color.y) as i32,
-            (255.999 * pixel_color.z) as i32
+            (255.999 * intensity.clamp(r)) as i32,
+            (255.999 * intensity.clamp(g)) as i32,
+            (255.999 * intensity.clamp(b)) as i32
         )
     }
 
@@ -95,6 +124,7 @@ impl Default for Camera {
         Camera {
             aspect_ratio: 1.0,
             image_width: 100,
+            samples_per_pixel: 10,
             image_height: 0,
             center: Vector3::new(0.0, 0.0, 0.0),
             pixel00_loc: Vector3::new(0.0, 0.0, 0.0),
