@@ -84,6 +84,10 @@ impl Camera {
         (px * self.pixel_delta_u) + (py * self.pixel_delta_v)
     }
 
+    fn linear_to_gamma(&self, linear_component: f64) -> f64 {
+        linear_component.sqrt()
+    }
+
     fn write_color(&self, pixel_color: &Vector3) {
         let mut r = pixel_color.x;
         let mut g = pixel_color.y;
@@ -93,6 +97,10 @@ impl Camera {
         r *= scale;
         g *= scale;
         b *= scale;
+
+        r = self.linear_to_gamma(r);
+        g = self.linear_to_gamma(g);
+        b = self.linear_to_gamma(b);
 
         let intensity = Interval::new(0.000, 0.999);
 
@@ -116,7 +124,7 @@ impl Camera {
         };
 
         if world.hit(ray, Interval::new(0.001, f64::INFINITY), &mut hit_record) {
-            let direction = Vector3::random_on_hemisphere(hit_record.normal);
+            let direction = hit_record.normal + Vector3::random_unit_vector();
             return 0.5 * self.ray_color(&Ray::new(hit_record.point, direction), depth - 1, world);
         }
 
