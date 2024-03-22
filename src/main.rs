@@ -1,10 +1,12 @@
 mod hittable;
 mod hittable_list;
+mod interval;
 mod ray;
 mod sphere;
 mod vector3;
 
 use hittable::{HitRecord, Hittable};
+use interval::Interval;
 use ray::Ray;
 use vector3::Vector3;
 
@@ -16,7 +18,7 @@ fn ray_color(ray: &Ray, world: &dyn Hittable) -> Vector3 {
         normal: Vector3::new(0.0, 0.0, 0.0),
         t: 0.0,
     };
-    if world.hit(ray, 0.0, f64::INFINITY, &mut hit_record) {
+    if world.hit(ray, Interval::new(0.0, f64::INFINITY), &mut hit_record) {
         return 0.5 * (hit_record.normal + Vector3::new(1.0, 1.0, 1.0));
     }
 
