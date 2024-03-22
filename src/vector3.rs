@@ -1,4 +1,5 @@
-use std::ops::{Add, Div, Mul, Sub};
+use rand::Rng;
+use std::ops::{Add, Div, Mul, Neg, Sub};
 
 #[derive(Clone, Copy)]
 pub struct Vector3 {
@@ -10,6 +11,46 @@ pub struct Vector3 {
 impl Vector3 {
     pub fn new(x: f64, y: f64, z: f64) -> Self {
         Self { x, y, z }
+    }
+
+    pub fn random() -> Self {
+        let mut rng = rand::thread_rng();
+        Self {
+            x: rng.gen(),
+            y: rng.gen(),
+            z: rng.gen(),
+        }
+    }
+
+    pub fn random_range(min: f64, max: f64) -> Self {
+        let mut rng = rand::thread_rng();
+        Self {
+            x: rng.gen_range(min..max),
+            y: rng.gen_range(min..max),
+            z: rng.gen_range(min..max),
+        }
+    }
+
+    pub fn random_in_unit_sphere() -> Self {
+        loop {
+            let p = Vector3::random_range(-1.0, 1.0);
+            if p.length_squared() < 1.0 {
+                return p;
+            }
+        }
+    }
+
+    pub fn random_on_hemisphere(normal: Vector3) -> Vector3 {
+        let on_unit_sphere = Vector3::random_unit_vector();
+        if on_unit_sphere.dot(normal) > 0.0 {
+            return on_unit_sphere;
+        } else {
+            return -on_unit_sphere;
+        }
+    }
+
+    pub fn random_unit_vector() -> Self {
+        Vector3::random_in_unit_sphere().normalized()
     }
 
     pub fn dot(self, rhs: Self) -> f64 {
@@ -123,6 +164,17 @@ impl Sub<Vector3> for Vector3 {
             x: self.x.sub(rhs.x),
             y: self.y.sub(rhs.y),
             z: self.z.sub(rhs.z),
+        }
+    }
+}
+
+impl Neg for Vector3 {
+    type Output = Self;
+    fn neg(self) -> Self {
+        Self {
+            x: -self.x,
+            y: -self.y,
+            z: -self.z,
         }
     }
 }
