@@ -82,6 +82,15 @@ impl Vector3 {
             z: self.z / len,
         }
     }
+
+    pub fn near_zero(&self) -> bool {
+        let s = 1e-8;
+        (self.x.abs() < s) && (self.y.abs() < s) && (self.z.abs() < s)
+    }
+
+    pub fn reflect(&self, n: Vector3) -> Self {
+        *self - 2.0 * self.dot(n) * n
+    }
 }
 
 impl Div<Vector3> for Vector3 {

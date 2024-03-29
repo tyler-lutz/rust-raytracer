@@ -117,15 +117,15 @@ impl Camera {
             return Vector3::new(0.0, 0.0, 0.0);
         }
 
-        let mut hit_record = HitRecord {
-            point: Vector3::new(0.0, 0.0, 0.0),
-            normal: Vector3::new(0.0, 0.0, 0.0),
-            t: 0.0,
-        };
+        let mut hit_record = HitRecord::default();
 
         if world.hit(ray, Interval::new(0.001, f64::INFINITY), &mut hit_record) {
-            let direction = hit_record.normal + Vector3::random_unit_vector();
-            return 0.5 * self.ray_color(&Ray::new(hit_record.point, direction), depth - 1, world);
+            let mut scattered = Ray::new(Vector3::new(0.0, 0.0, 0.0), Vector3::new(0.0, 0.0, 0.0));
+            let mut attenuation = Vector3::new(0.0, 0.0, 0.0);
+            if hit_record.scatter(ray, &hit_record, &mut attenuation, &mut scattered) {
+                return attenuation * self.ray_color(&scattered, depth - 1, world);
+            }
+            return Vector3::new(0.0, 0.0, 0.0);
         }
 
         let unit_direction = ray.direction.normalized();
